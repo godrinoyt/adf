@@ -1,0 +1,173 @@
+{
+	"name": "restapisplittingdataintopages",
+	"properties": {
+		"activities": [
+			{
+				"name": "API_DATA",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://reqres.in/api/users?page=1",
+					"method": "GET"
+				}
+			},
+			{
+				"name": "API_DATA_COPY",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "API_DATA",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@range(1,activity('API_DATA').output.total_pages)",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Copy data1",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RestSource",
+									"httpRequestTimeout": "00:01:40",
+									"requestInterval": "00.00:00:00.010",
+									"requestMethod": "GET",
+									"paginationRules": {
+										"supportRFC5988": "true"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"path": "$['data'][0]['id']"
+											},
+											"sink": {
+												"name": "id"
+											}
+										},
+										{
+											"source": {
+												"path": "$['data'][0]['name']"
+											},
+											"sink": {
+												"name": "name"
+											}
+										},
+										{
+											"source": {
+												"path": "$['data'][0]['year']"
+											},
+											"sink": {
+												"name": "year"
+											}
+										},
+										{
+											"source": {
+												"path": "$['data'][0]['color']"
+											},
+											"sink": {
+												"name": "color"
+											}
+										},
+										{
+											"source": {
+												"path": "$['data'][0]['pantone_value']"
+											},
+											"sink": {
+												"name": "pantone_value"
+											}
+										},
+										{
+											"source": {
+												"path": "$['support']['url']"
+											},
+											"sink": {
+												"name": "url"
+											}
+										},
+										{
+											"source": {
+												"path": "$['support']['text']"
+											},
+											"sink": {
+												"name": "text"
+											}
+										}
+									]
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_RestAPI",
+									"type": "DatasetReference",
+									"parameters": {
+										"QUERYPARAMETERS": {
+											"value": "?page=@{item()}",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ABS",
+									"type": "DatasetReference",
+									"parameters": {
+										"FILENAME": {
+											"value": "APIPAGE@{item()}.CSV",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "pardhu pipelines"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-05-07T14:04:05Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
